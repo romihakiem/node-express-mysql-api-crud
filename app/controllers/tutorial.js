@@ -45,10 +45,11 @@ exports.findPublished = (req, res) => {
 
 // Store a newly created resource in storage.
 exports.create = (req, res) => {
-    if (!req.body) {
+    if (!req.body.title) {
         res.status(400).send({
             message: "Content can not be empty!"
         });
+        return;
     }
 
     const val = new Tutorial({
@@ -68,17 +69,18 @@ exports.create = (req, res) => {
 
 // Update the specified resource in storage.
 exports.update = (req, res) => {
-    if (!req.body) {
+    if (!req.body.title) {
         res.status(400).send({
             message: "Content can not be empty!"
         });
+        return;
     }
 
     Tutorial.update(req.params.id, new Tutorial(req.body), (err, data) => {
         if (err) {
             if (err.kind === "not_found") {
                 res.status(404).send({
-                    message: `Data not found with id ${req.params.id}.`
+                    message: `Data not updated with id ${req.params.id}.`
                 });
             } else {
                 res.status(500).send({
@@ -95,7 +97,7 @@ exports.delete = (req, res) => {
         if (err) {
             if (err.kind === "not_found") {
                 res.status(404).send({
-                    message: `Data not found with id ${req.params.id}.`
+                    message: `Data not deleted with id ${req.params.id}.`
                 });
             } else {
                 res.status(500).send({
