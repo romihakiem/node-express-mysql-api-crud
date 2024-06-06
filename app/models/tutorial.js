@@ -1,4 +1,4 @@
-const sql = require("./connection.js");
+const conn = require("./connection");
 
 const Tutorial = function (val) {
     this.title = val.title;
@@ -6,25 +6,43 @@ const Tutorial = function (val) {
     this.published = val.published;
 };
 
-Tutorial.getAll = (title, result) => {
-    let query = "SELECT * FROM tutorials";
+Tutorial.getAll = (page, size, title, result) => {
+    page = parseInt(page ?? 0);
+    size = parseInt(size ?? 0);
 
-    if (title) {
-        query += ` WHERE title LIKE "%${title}%"`;
-    }
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(size) || size < 1) size = 5;
 
-    sql.query(query, (err, res) => {
+    conn.query("SELECT COUNT(*) AS total FROM tutorials", (err, res) => {
         if (err) {
-            result(null, err);
+            result(err, null);
             return;
         }
 
-        result(null, res);
+        let total = res[0].total;
+
+        let sql = "SELECT * FROM tutorials";
+        if (title) sql += ` WHERE title LIKE "%${title}%"`;
+        sql += ` LIMIT ${size} OFFSET ${((page - 1) * size)}`;
+
+        conn.query(sql, (err, res) => {
+            if (err) {
+                result(err, null);
+                return;
+            }
+
+            result(null, {
+                pages: size,
+                current: page,
+                data: res,
+                total: total
+            });
+        });
     });
 };
 
 Tutorial.getById = (id, result) => {
-    sql.query(`SELECT * FROM tutorials WHERE id = ${id}`, (err, res) => {
+    conn.query(`SELECT * FROM tutorials WHERE id = ${id}`, (err, res) => {
         if (err) {
             result(err, null);
             return;
@@ -40,9 +58,9 @@ Tutorial.getById = (id, result) => {
 };
 
 Tutorial.getPublished = result => {
-    sql.query("SELECT * FROM tutorials WHERE published = true", (err, res) => {
+    conn.query("SELECT * FROM tutorials WHERE published = true", (err, res) => {
         if (err) {
-            result(null, err);
+            result(err, null);
             return;
         }
 
@@ -51,7 +69,7 @@ Tutorial.getPublished = result => {
 };
 
 Tutorial.create = (val, result) => {
-    sql.query("INSERT INTO tutorials SET ?", val, (err, res) => {
+    conn.query("INSERT INTO tutorials SET ?", val, (err, res) => {
         if (err) {
             result(err, null);
             return;
@@ -62,11 +80,11 @@ Tutorial.create = (val, result) => {
 };
 
 Tutorial.update = (id, val, result) => {
-    sql.query("UPDATE tutorials SET title = ?, description = ?, published = ? WHERE id = ?",
+    conn.query("UPDATE tutorials SET title = ?, description = ?, published = ? WHERE id = ?",
         [val.title, val.description, val.published, id],
         (err, res) => {
             if (err) {
-                result(null, err);
+                result(err, null);
                 return;
             }
 
@@ -81,9 +99,9 @@ Tutorial.update = (id, val, result) => {
 };
 
 Tutorial.remove = (id, result) => {
-    sql.query("DELETE FROM tutorials WHERE id = ?", id, (err, res) => {
+    conn.query("DELETE FROM tutorials WHERE id = ?", id, (err, res) => {
         if (err) {
-            result(null, err);
+            result(err, null);
             return;
         }
 
@@ -97,9 +115,9 @@ Tutorial.remove = (id, result) => {
 };
 
 Tutorial.removeAll = result => {
-    sql.query("DELETE FROM tutorials", (err, res) => {
+    conn.query("DELETE FROM tutorials", (err, res) => {
         if (err) {
-            result(null, err);
+            result(err, null);
             return;
         }
 
